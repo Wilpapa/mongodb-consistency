@@ -30,9 +30,9 @@ def log_queue(my_queue, stop_token, logfile):
                 return
             f.write(line)
 
-def update_people(people, session, process_find, index_find, age_write, log, process_id):
+def update_people(people, session, process_id, index_find, age_write, log):
     try:
-        result = people.update_one({'process': process_find, 'index': index_find}, {'$set': {'age': age_write}},
+        result = people.update_one({'process': process_id, 'index': index_find}, {'$set': {'age': age_write}},
                           session=session)
         return result.matched_count == 1
     except Exception as e:
@@ -41,7 +41,7 @@ def update_people(people, session, process_find, index_find, age_write, log, pro
         print(e)
         return False
 
-def find_people(people, session, process_find, index_find, log, process_id):
+def find_people(people, session, process_id, index_find, log):
     try:
         return people.find_one({'process': process_find, 'index': index_find},
                                {'_id': 0, 'process': 1, 'index': 1, 'age': 1},
@@ -63,16 +63,15 @@ def run(process_id, uri, log):
     # let's mass update and find (read your writes and check consistency)
     for j in range(loops):
         # pick a random record key and a random value to write
-        rand_process = random.randint(0, processesNumber - 1)
         rand_index = random.randint(0, count_people - 1)
         rand_age = random.randint(20, 50)
         if j % loopsPrint == 0:  # print every loopsPrint updates
             print('%s - process %s - records %s' % (time.strftime("%H:%M:%S"), process_id, j))
         with connection.start_session(causal_consistency=True) as session:
             # updates a document on PRIMARY and run a find if write was successful
-            if (update_people(people_collection, session, rand_process, rand_index, rand_age, log, process_id)):
+            if (update_people(people_collection, session, process_id, rand_index, rand_age, log)):
                 # finds the same document on SECONDARY
-                doc = find_people(people_collection, session, rand_process, rand_index, log, process_id)
+                doc = find_people(people_collection, session, process_id, rand_index, log)
                 if doc is not None:
                     log_output = time.strftime("%H:%M:%S") + " - process " + str(
                         process_id) + " - index " + str(rand_index) + " - loop " + str(
