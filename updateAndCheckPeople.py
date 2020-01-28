@@ -43,7 +43,7 @@ def update_people(people, session, process_id, index_find, age_write, log):
 
 def find_people(people, session, process_id, index_find, log):
     try:
-        return people.find_one({'process': process_find, 'index': index_find},
+        return people.find_one({'process': process_id, 'index': index_find},
                                {'_id': 0, 'process': 1, 'index': 1, 'age': 1},
                                session=session)
     except Exception as e:
